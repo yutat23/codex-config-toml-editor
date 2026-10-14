@@ -28,6 +28,7 @@ export const ViewColumn = { One: 1, Beside: 2 };
 export const state: {
   root: string; messages: any[]; handler?: (m: unknown) => void; html: string;
   commands: Map<string, (...args: any[]) => Promise<void>>; errors: string[]; diff?: any[];
+  scanRequests?: number[]; scanError?: boolean;
 } = { root: '', messages: [], html: '', commands: new Map(), errors: [] };
 
 async function read(file: string) {
@@ -40,7 +41,11 @@ export const workspace = {
   textDocuments: [] as any[],
   getWorkspaceFolder(uri: Uri) { return uri.fsPath.startsWith(state.root + '/') ? workspace.workspaceFolders[0] : undefined; },
   registerTextDocumentContentProvider() { return { dispose() {} }; },
-  async findFiles() { return [Uri.file(path.join(state.root, '.env')), Uri.file(path.join(state.root, 'src/main.ts'))]; },
+  async findFiles(_include: unknown, _exclude: unknown, maxResults: number) {
+    (state.scanRequests ??= []).push(maxResults);
+    if (state.scanError) throw new Error('scan failed');
+    return [Uri.file(path.join(state.root, '.env')), Uri.file(path.join(state.root, 'src/main.ts'))].slice(0, maxResults);
+  },
   fs: {
     readFile: (uri: Uri) => read(uri.fsPath),
     async stat(uri: Uri) { try { return await stat(uri.fsPath); } catch { throw new FileSystemError(); } },

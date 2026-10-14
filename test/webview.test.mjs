@@ -134,3 +134,47 @@ test('language switching preserves unsaved drafts, active tab, expanded sections
     assert.equal(sent.at(-1).draft.basics.model, 'draft-model');
   } finally { window.close(); }
 });
+
+
+for (const locale of ['ja', 'en']) {
+  test(`${locale}: rescanning preserves the draft and reviewed changes while refreshing results`, async () => {
+    const dom = new JSDOM(html('https://editor.test', 'nonce', '', '', locale), { runScripts: 'outside-only' });
+    const { window } = dom;
+    const document = window.document;
+    const $ = id => document.getElementById(id);
+    const sent = [];
+    window.acquireVsCodeApi = () => ({ postMessage: message => sent.push(message) });
+    const dispatch = data => window.dispatchEvent(new window.MessageEvent('message', { data }));
+    const info = { issues: [], sources: [], candidates: ['.env'], extraRules: [] };
+    try {
+      window.eval(await readFile('media/editor.js', 'utf8'));
+      dispatch({ type: 'loaded', ...info, root: 'fixture', invalid: false, draft: { basics: { model: 'custom-model', model_reasoning_effort: '', approval_policy: '', web_search: '' }, patterns: ['**/.env'], protect: true }, count: 10000, scanLimit: 10000, truncated: true });
+      dispatch({ type: 'idle' });
+      $('model').value = 'draft-model'; $('model').dispatchEvent(new window.Event('input'));
+      $('preview').click();
+      const revision = sent.at(-1).revision;
+      dispatch({ type: 'prepared', revision }); dispatch({ type: 'idle' });
+      dispatch({ type: 'matches', rules: [{ pattern: '**/.env', count: 1, files: ['.env'] }], truncated: true, scanLimit: 10000 });
+      assert.match($('matches').textContent, /10000/);
+      $('scanLimit').value = '50000';
+      $('scanForm').dispatchEvent(new window.Event('submit', { cancelable: true }));
+      assert.equal(sent.at(-1).type, 'rescan');
+      assert.equal(sent.at(-1).scanLimit, 50000);
+      assert.equal(document.querySelector('main').inert, true);
+      dispatch({ type: 'scanned', count: 12345, scanLimit: 50000, truncated: false, info }); dispatch({ type: 'idle' });
+      assert.equal($('model').value, 'draft-model');
+      assert.equal($('protect').checked, true);
+      assert.equal(document.querySelectorAll('.pattern').length, 1);
+      assert.equal($('save').disabled, false);
+      assert.equal($('matches').textContent, '');
+      assert.match($('scanStatus').textContent, /12345.*50000/);
+      $('scanForm').dispatchEvent(new window.Event('submit', { cancelable: true }));
+      dispatch({ type: 'error', operation: 'rescan', message: 'Cannot scan.' }); dispatch({ type: 'idle' });
+      assert.equal($('save').disabled, false);
+      assert.equal($('model').value, 'draft-model');
+      $('save').click();
+      assert.equal(sent.at(-1).revision, revision);
+      assert.equal(sent.at(-1).draft.basics.model, 'draft-model');
+    } finally { window.close(); }
+  });
+}

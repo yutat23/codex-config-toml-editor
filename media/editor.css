@@ -102,3 +102,6 @@ main[aria-busy=true] { opacity: .5; pointer-events: none; }
   header { flex-wrap: wrap; }
   .header-actions { width: 100%; align-items: center; justify-content: space-between; }
 }
+
+.scan-settings form .row input { flex: 0 1 180px; }
+#scanStatus { margin: 10px 0 0; }

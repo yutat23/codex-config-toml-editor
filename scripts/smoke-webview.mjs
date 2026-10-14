@@ -36,6 +36,10 @@ try {
           window.dispatchEvent(new MessageEvent('message', { data: { type: 'language', locale: language, choice: message.choice, info } }));
           window.dispatchEvent(new MessageEvent('message', { data: { type: 'idle' } }));
         }, 0);
+        if (message.type === 'rescan') setTimeout(() => {
+          window.dispatchEvent(new MessageEvent('message', { data: { type: 'scanned', count: 36, truncated: false, scanLimit: message.scanLimit, info: fixture } }));
+          window.dispatchEvent(new MessageEvent('message', { data: { type: 'idle' } }));
+        }, 0);
         if (message.type === 'preview') setTimeout(() => { window.dispatchEvent(new MessageEvent('message', { data: { type: 'prepared', revision: message.revision } })); window.dispatchEvent(new MessageEvent('message', { data: { type: 'idle' } })); }, 0);
       } });
     }, { fixture, locale });
@@ -60,6 +64,15 @@ try {
     assert.ok(await page.evaluate(() => window.sent.some(m => m.type === 'previewFiles' && m.draft.patterns.includes('config/private.json'))));
     await page.locator('#preview').click();
     await page.waitForFunction(() => !document.querySelector('#save').disabled);
+    await page.locator('.scan-settings summary').click();
+    await page.locator('#scanLimit').fill('50000');
+    await page.locator('#rescan').click();
+    await page.waitForFunction(() => !document.querySelector('#rescan').disabled);
+    assert.equal(await page.locator('#save').isEnabled(), true);
+    assert.equal(await page.locator('.pattern').count(), 7);
+    assert.match(await page.locator('#scanStatus').textContent(), /50000/);
+    await page.screenshot({ path: `artifacts/scan-settings${suffix}.png`, fullPage: true });
+    await page.locator('.scan-settings summary').click();
     const other = locale === 'ja' ? 'en' : 'ja';
     await page.locator('#language').selectOption(other);
     await page.waitForFunction(language => document.documentElement.lang === language && !document.querySelector('#language').disabled, other);
@@ -85,5 +98,5 @@ try {
     assert.deepEqual(errors, []);
     await page.close();
   }
-  console.log('Japanese/English webview smoke passed: language switching, patterns, preview, stale preview invalidation, tabs, escaping, dark/light and narrow layout.');
+  console.log('Japanese/English webview smoke passed: language switching, rescanning, patterns, preview, stale preview invalidation, tabs, escaping, dark/light and narrow layout.');
 } finally { await browser.close(); }

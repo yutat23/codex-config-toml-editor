@@ -55,7 +55,28 @@ test(`${locale}: extension preview/save lifecycle blocks stale writes, preserves
     assert.equal(stored.get('editorLanguage'), other);
     messages = await message({ type: 'setLanguage', choice: 'auto' });
     assert.equal(messages.find(m => m.type === 'language').locale, locale);
-    // Language changes must preserve a prepared preview and its save authorization.
+    messages = await message({ type: 'rescan', scanLimit: 1 });
+    let scanned = messages.find(m => m.type === 'scanned');
+    assert.equal(scanned.count, 1);
+    assert.equal(scanned.truncated, true);
+    assert.equal(state.scanRequests?.at(-1), 2);
+    assert.equal(stored.get(`scanLimit:${Uri.file(root).toString()}`), 1);
+    messages = await message({ type: 'rescan', scanLimit: 2 });
+    scanned = messages.find(m => m.type === 'scanned');
+    assert.equal(scanned.count, 2);
+    assert.equal(scanned.truncated, false);
+    assert.equal(state.scanRequests?.at(-1), 3);
+    for (const limit of [0, -1, 1.5, '3', 1000001]) {
+      messages = await message({ type: 'rescan', scanLimit: limit });
+      assert.ok(messages.some(m => m.type === 'error' && m.operation === 'rescan'));
+      assert.equal(stored.get(`scanLimit:${Uri.file(root).toString()}`), 2);
+    }
+    state.scanError = true;
+    messages = await message({ type: 'rescan', scanLimit: 3 });
+    state.scanError = false;
+    assert.ok(messages.some(m => m.type === 'error' && m.operation === 'rescan'));
+    assert.equal(stored.get(`scanLimit:${Uri.file(root).toString()}`), 2);
+    // Language changes and rescans must preserve the prepared preview.
     messages = await message({ type: 'save' });
     assert.ok(messages.some(m => m.type === 'saved'));
     assert.equal(parse(await readFile(config, 'utf8')).default_permissions, 'repository-protection');
@@ -92,9 +113,12 @@ test(`${locale}: extension preview/save lifecycle blocks stale writes, preserves
     activate({ extensionUri: Uri.file(process.cwd()), subscriptions, globalState } as any);
     await state.commands.get('codexConfig.open')!();
     assert.ok(state.html.includes(`lang="${other}"`));
+    messages = await message({ type: 'ready' });
+    assert.equal(messages.find(m => m.type === 'loaded').scanLimit, 2);
   } finally {
     subscriptions.forEach(subscription => subscription.dispose());
     env.language = 'ja';
+    state.scanError = false;
     await rm(root, { recursive: true, force: true });
   }
 });

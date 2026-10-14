@@ -79,7 +79,6 @@
   "上限に達しています。": "Scan limit reached. ",
   "{0}: {1}件": "{0}: {1} matches",
   "先頭200件のみ表示。": "Showing only the first 200 matches.",
-  "走査上限に達しました。一致件数はリポジトリ全体の件数ではありません。": "Scan limit reached. Match counts do not cover the entire repository.",
   "差分を開きました。内容を確認し、「確認した変更を保存」を押してください。": "Diff opened. Review the changes, then click “Save reviewed changes”.",
   "Codexリポジトリ設定": "Codex repository settings",
   "リポジトリ設定": "Repository settings",
@@ -137,5 +136,13 @@
   "表示言語": "Display language",
   "VSCodeに合わせる": "Follow VSCode",
   "保存しました。Codexの新しいセッションで設定を確認してください。": "Saved. Check the settings in a new Codex session.",
-  "ルールの一致表示はパスのプレビューです。サンドボックス外のMCP、添付内容、実行ログや環境変数から渡る情報は別途管理してください。": "Matches are path previews. Manage information provided by external MCPs, attachments, logs, and environment variables separately."
+  "ルールの一致表示はパスのプレビューです。サンドボックス外のMCP、添付内容、実行ログや環境変数から渡る情報は別途管理してください。": "Matches are path previews. Manage information provided by external MCPs, attachments, logs, and environment variables separately.",
+  "検索設定": "Search settings",
+  "検索するファイル数の上限": "Maximum files to scan",
+  "上限を変更して再検索": "Apply limit and rescan",
+  "初期値は10,000件。候補と一致確認の検索に使います。保護ルールには影響しません。": "Default: 10,000 files. Applies to candidate detection and match previews; protection rules are unaffected.",
+  "検索上限は1〜1,000,000の整数で指定してください。": "Enter a whole-number scan limit between 1 and 1,000,000.",
+  "{0}件のファイルを確認（検索上限: {1}件）": "Scanned {0} files (limit: {1}).",
+  "検索上限（{0}件）に達したため、一部のファイルは確認できていません。": "The scan limit ({0} files) was reached. Some files have not been checked.",
+  "再検索しました。一致するファイルは「対象ファイルを確認」で確認できます。": "Rescan complete. Use “Check matching files” to refresh the match preview."
 }

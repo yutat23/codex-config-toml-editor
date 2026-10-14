@@ -17,7 +17,11 @@ const panels = new Map<string, Editor>();
 const previews = new Map<string, string>();
 const decoder = new TextDecoder();
 const excludes = '**/{.git,node_modules,.venv,venv,bin,obj,dist,build,.next,.test-build}/**';
-const fileLimit = 10000;
+const defaultFileLimit = 10000;
+const maxFileLimit = 1000000;
+function validFileLimit(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= maxFileLimit;
+}
 
 async function read(uri: vscode.Uri): Promise<string> {
   const open = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri.toString());
@@ -87,10 +91,14 @@ class Editor {
   private queuedPatterns: string[] = [];
   private files: string[] = [];
   private truncated = false;
+  private fileLimit = defaultFileLimit;
+  private get scanStorageKey() { return `scanLimit:${this.root.uri.toString()}`; }
   private busy = false;
   private version = t("確認中");
   private previewUris: vscode.Uri[] = [];
   constructor(private root: vscode.WorkspaceFolder, private context: vscode.ExtensionContext) {
+    const savedLimit = context.globalState?.get<number>(this.scanStorageKey);
+    if (validFileLimit(savedLimit)) this.fileLimit = savedLimit;
     this.panel = vscode.window.createWebviewPanel('codexConfig', t("Codex設定: {0}", root.name), vscode.ViewColumn.One,
       { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')], retainContextWhenHidden: true });
     const nonce = randomBytes(24).toString('hex');
@@ -115,13 +123,18 @@ class Editor {
     this.base = await snapshot(this.root);
     const current = layer(t("リポジトリ .codex/config.toml"), this.base.text);
     const draft = makeDraft(current.data ?? {});
-    const found = await vscode.workspace.findFiles(new vscode.RelativePattern(this.root, '**/*'), excludes, fileLimit + 1);
-    this.truncated = found.length > fileLimit;
-    this.files = found.slice(0, fileLimit).map(uri => path.relative(this.root.uri.fsPath, uri.fsPath).split(path.sep).join('/')).sort();
+    await this.scan();
     this.send({ type: 'loaded', root: this.root.name, draft, invalid: Boolean(current.error),
       ...this.information(), choice: languageChoice,
-      count: this.files.length });
+      count: this.files.length, scanLimit: this.fileLimit, truncated: this.truncated });
     this.deliverPatterns();
+  }
+  private async scan(limit = this.fileLimit, persist = false) {
+    const found = await vscode.workspace.findFiles(new vscode.RelativePattern(this.root, '**/*'), excludes, limit + 1);
+    if (persist) await this.context.globalState.update(this.scanStorageKey, limit);
+    this.fileLimit = limit;
+    this.truncated = found.length > limit;
+    this.files = found.slice(0, limit).map(uri => path.relative(this.root.uri.fsPath, uri.fsPath).split(path.sep).join('/')).sort();
   }
   private information() {
     if (!this.base) return {};
@@ -163,7 +176,7 @@ class Editor {
       try {
         const draft = validateDraft(m.draft);
         const rules = draft.patterns.map(pattern => { const all = this.files.filter(f => matches(f, pattern)); return { pattern, files: all.slice(0, 200), count: all.length }; });
-        this.send({ type: 'matches', rules, truncated: this.truncated });
+        this.send({ type: 'matches', rules, truncated: this.truncated, scanLimit: this.fileLimit });
       } catch (error) { this.send({ type: 'error', message: errorMessage(error) }); }
       return;
     }
@@ -180,7 +193,11 @@ class Editor {
         return;
       }
       if (!vscode.workspace.isTrusted) throw new UserError(t("ワークスペースを信頼してから実行してください。"));
-      if (m.type === 'ready' || m.type === 'reload') {
+      if (m.type === 'rescan') {
+        if (!validFileLimit(m.scanLimit)) throw new UserError(t("検索上限は1〜1,000,000の整数で指定してください。"));
+        await this.scan(m.scanLimit, true);
+        this.send({ type: 'scanned', count: this.files.length, truncated: this.truncated, scanLimit: this.fileLimit, info: this.information() });
+      } else if (m.type === 'ready' || m.type === 'reload') {
         if (m.type === 'reload' && m.dirty) {
           const answer = await vscode.window.showWarningMessage(t("未保存の変更を破棄して再読み込みしますか？"), { modal: true }, t("破棄して再読み込み"));
           if (answer !== t("破棄して再読み込み")) return;
@@ -234,10 +251,10 @@ class Editor {
         this.send({ type: 'saved' });
       }
     } catch (error) {
-      this.pending = undefined;
+      if (m.type !== 'rescan') this.pending = undefined;
       // Parser errors can contain config values. Only messages from our own
       // validation are shown; unknown library/I/O errors get a generic message.
-      this.send({ type: 'error', message: errorMessage(error) });
+      this.send({ type: 'error', message: errorMessage(error), operation: m.type });
     } finally { this.busy = false; this.send({ type: 'idle' }); if (this.base) this.deliverPatterns(); }
   }
 }

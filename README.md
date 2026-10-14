@@ -57,3 +57,14 @@ npm run package
 ```
 
 Open this folder in VSCode and press F5 to launch the Extension Development Host.
+
+## Marketplace publishing
+
+Register the `yutat23` publisher and authenticate with `vsce` before publishing:
+
+```sh
+npx --yes --package @vscode/vsce@3.9.2 vsce login yutat23
+npm run publish:marketplace
+```
+
+The command runs type checks and tests, builds the extension, and publishes the version in `package.json`. You can also provide authentication through `VSCE_PAT` or use `npm run publish:marketplace -- --azure-credential` for Microsoft Entra ID. See the [official publishing guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension) for publisher setup and authentication.

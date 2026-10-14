@@ -58,7 +58,8 @@
     "test": "node scripts/test.mjs",
     "test:ui": "node scripts/smoke-webview.mjs",
     "package": "npm run check && npm run test && npm run build && npx --yes --package @vscode/vsce@3.9.2 vsce package --no-dependencies --allow-missing-repository",
-    "vscode:prepublish": "npm run build"
+    "vscode:prepublish": "npm run build",
+    "publish:marketplace": "npm run check && npm test && npx --yes --package @vscode/vsce@3.9.2 vsce publish --no-dependencies"
   },
   "dependencies": {
     "confbox": "0.2.4",

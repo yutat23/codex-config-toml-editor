@@ -16,3 +16,4 @@ English | [日本語](CHANGELOG.ja.md) · [README](README.md)
 - A language selector with Follow VSCode, Japanese, and English options. The selection persists across editor sessions; switching preserves unsaved edits and reviewed changes.
 - A configurable search limit (default: 10,000 files), saved per repository, with rescanning that preserves unsaved edits and reviewed changes.
 - Theme-aware styling, responsive layouts, and keyboard navigation.
+- A `publish:marketplace` npm command that checks, tests, builds, and publishes the extension using vsce.

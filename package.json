@@ -73,5 +73,13 @@
     "typescript": "5.9.3"
   },
   "type": "module",
-  "private": true
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yutat23/codex-config-toml-editor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yutat23/codex-config-toml-editor/issues"
+  },
+  "homepage": "https://github.com/yutat23/codex-config-toml-editor#readme"
 }

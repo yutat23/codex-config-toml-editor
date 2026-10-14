@@ -1,0 +1,77 @@
+{
+  "name": "codex-config-toml-editor",
+  "displayName": "Codex Config TOML Editor",
+  "description": "%extension.description%",
+  "version": "0.1.0",
+  "publisher": "yutat23",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.120.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "codex",
+    "toml",
+    "security",
+    "configuration"
+  ],
+  "main": "./dist/extension.cjs",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "%workspace.trustDescription%"
+    },
+    "virtualWorkspaces": {
+      "supported": false
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "codexConfig.open",
+        "title": "%command.open%",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "codexConfig.protect",
+        "title": "%command.protect%"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "codexConfig.protect",
+          "when": "resourceScheme == file && isWorkspaceTrusted",
+          "group": "codex@1"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "test:ui": "node scripts/smoke-webview.mjs",
+    "package": "npm run check && npm run test && npm run build && npx --yes --package @vscode/vsce@3.9.2 vsce package --no-dependencies --allow-missing-repository",
+    "vscode:prepublish": "npm run build"
+  },
+  "dependencies": {
+    "confbox": "0.2.4",
+    "minimatch": "10.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "@types/vscode": "1.120.0",
+    "esbuild": "0.28.0",
+    "jsdom": "24.1.3",
+    "playwright": "1.60.0",
+    "typescript": "5.9.3"
+  },
+  "type": "module",
+  "private": true
+}

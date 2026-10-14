@@ -1,0 +1,6 @@
+{
+  "extension.description": "Edit per-repository Codex settings and manage read-deny rules for sensitive files.",
+  "workspace.trustDescription": "A trusted workspace is required to change settings.",
+  "command.open": "Codex Config TOML Editor: Open Repository Settings",
+  "command.protect": "Codex Config TOML Editor: Deny Reading This File or Folder"
+}

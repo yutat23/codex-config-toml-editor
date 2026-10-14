@@ -1,0 +1,6 @@
+{
+  "extension.description": "リポジトリごとのCodex設定を編集し、機密ファイルの読み取り禁止ルールを管理します。",
+  "workspace.trustDescription": "設定の変更には信頼されたワークスペースが必要です。",
+  "command.open": "Codex Config TOML Editor: リポジトリ設定を開く",
+  "command.protect": "Codex Config TOML Editor: このファイル・フォルダーの読み取りを禁止"
+}
